@@ -1,0 +1,24 @@
+{
+  "name": "sandbox_node",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "./node_modules/.bin/mocha ./src/**/*.specs.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/josh-egan/sandbox_node.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/josh-egan/sandbox_node/issues"
+  },
+  "homepage": "https://github.com/josh-egan/sandbox_node#readme",
+  "devDependencies": {
+    "chai": "4.0.0",
+    "mocha": "3.4.2"
+  }
+}
