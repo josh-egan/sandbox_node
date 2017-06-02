@@ -113,7 +113,7 @@ describe('generators', () => {
     }
   });
 
-  if (process.version >= 'v5') {
+  if (process.version >= 'v6') {
     it('should short circuit the generator if the return method is used', () => {
       function* test() {
         yield 1;
