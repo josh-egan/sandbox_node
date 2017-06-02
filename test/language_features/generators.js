@@ -39,11 +39,59 @@ describe('generators', () => {
 
     const iterable = test();
 
-    expect(iterable.next().value).to.equal(1);
-    expect(iterable.next().value).to.equal(2);
+    expect(iterable.next()).to.eql({ value: 1, done: false });
+    expect(iterable.next()).to.eql({ value: 2, done: false });
     expect(iterable.next()).to.eql({ value: 3, done: false });
     expect(iterable.next()).to.eql({ value: undefined, done: true });
     expect(iterable.next()).to.eql({ value: undefined, done: true });
+  });
+
+  it('should throw if the throw method is used', () => {
+    function* test() {
+      yield 1;
+      yield 2;
+    }
+
+    const iterable = test();
+
+    const err = new Error('oops');
+    expect(iterable.next().value).to.equal(1);
+    try {
+      iterable.throw(err);
+    } catch (e) {
+      expect(e).to.eql(err);
+    }
+  });
+
+  if (process.version >= 'v6') {
+    it('should short circuit the generator if the return method is used', () => {
+      function* test() {
+        yield 1;
+        yield 2;
+        yield 3;
+      }
+
+      const iterable = test();
+
+      expect(iterable.next().value).to.equal(1);
+      expect(iterable.return(8).value).to.equal(8);
+      expect(iterable.next().value).to.equal(undefined);
+    });
+  }
+
+  it('should end the generator on a return statement', () => {
+    function* test() {
+      yield 1;
+      return 2;
+      //noinspection UnreachableCodeJS
+      yield 3;
+    }
+
+    const iterable = test();
+
+    expect(iterable.next().value).to.equal(1);
+    expect(iterable.next().value).to.equal(2);
+    expect(iterable.next().value).to.equal(undefined);
   });
 
   context('when passing values into a generator', () => {
@@ -96,84 +144,74 @@ describe('generators', () => {
     });
   });
 
-  it('should throw if the throw method is used', () => {
-    function* test() {
-      yield 1;
-      yield 2;
-    }
+  context('when using yield*', () => {
+    it('should yield all of the results from a generator on a yield*', () => {
+      function* test1() {
+        yield 'before';
+        yield* test2();
+        yield 'after';
+      }
 
-    const iterable = test();
-
-    const err = new Error('oops');
-    expect(iterable.next().value).to.equal(1);
-    try {
-      iterable.throw(err);
-    } catch (e) {
-      expect(e).to.eql(err);
-    }
-  });
-
-  if (process.version >= 'v6') {
-    it('should short circuit the generator if the return method is used', () => {
-      function* test() {
+      function* test2() {
         yield 1;
         yield 2;
+        yield* test3();
         yield 3;
+      }
+
+      function* test3() {
+        yield 2.1;
+        yield 2.2;
+        yield 2.3;
+      }
+
+      const iterable = test1();
+
+      expect(iterable.next().value).to.equal('before');
+      expect(iterable.next().value).to.equal(1);
+      expect(iterable.next().value).to.equal(2);
+      expect(iterable.next().value).to.equal(2.1);
+      expect(iterable.next().value).to.equal(2.2);
+      expect(iterable.next().value).to.equal(2.3);
+      expect(iterable.next().value).to.equal(3);
+      expect(iterable.next().value).to.equal('after');
+      expect(iterable.next().value).to.equal(undefined);
+    });
+
+    it('should iterate over any type of iterable using a yield*', () => {
+      function* test() {
+        yield* [-2, -1, 0];
+        yield* test1();
+        let capturedResult = yield* test2();
+        yield capturedResult;
+        yield* 'foo';
+      }
+
+      function* test1() {
+        yield 1;
+        yield 2;
+        return 20;
+      }
+
+      function* test2() {
+        yield 3;
+        yield 4;
+        return 30;
       }
 
       const iterable = test();
 
+      expect(iterable.next().value).to.equal(-2);
+      expect(iterable.next().value).to.equal(-1);
+      expect(iterable.next().value).to.equal(0);
       expect(iterable.next().value).to.equal(1);
-      expect(iterable.return(8).value).to.equal(8);
-      expect(iterable.next().value).to.equal(undefined);
+      expect(iterable.next().value).to.equal(2);
+      expect(iterable.next().value).to.equal(3);
+      expect(iterable.next().value).to.equal(4);
+      expect(iterable.next().value).to.equal(30);
+      expect(iterable.next().value).to.equal('f');
+      expect(iterable.next().value).to.equal('o');
+      expect(iterable.next().value).to.equal('o');
     });
-  }
-
-  it('should yield all of the results from a generator on a yield*', () => {
-    function* test1() {
-      yield 'before';
-      yield* test2();
-      yield 'after';
-    }
-
-    function* test2() {
-      yield 1;
-      yield 2;
-      yield* test3();
-      yield 3;
-    }
-
-    function* test3() {
-      yield 2.1;
-      yield 2.2;
-      yield 2.3;
-    }
-
-    const iterable = test1();
-
-    expect(iterable.next().value).to.equal('before');
-    expect(iterable.next().value).to.equal(1);
-    expect(iterable.next().value).to.equal(2);
-    expect(iterable.next().value).to.equal(2.1);
-    expect(iterable.next().value).to.equal(2.2);
-    expect(iterable.next().value).to.equal(2.3);
-    expect(iterable.next().value).to.equal(3);
-    expect(iterable.next().value).to.equal('after');
-    expect(iterable.next().value).to.equal(undefined);
-  });
-
-  it('should end the generator on a return statement', () => {
-    function* test() {
-      yield 1;
-      return 2;
-      //noinspection UnreachableCodeJS
-      yield 3;
-    }
-
-    const iterable = test();
-
-    expect(iterable.next().value).to.equal(1);
-    expect(iterable.next().value).to.equal(2);
-    expect(iterable.next().value).to.equal(undefined);
   });
 });
