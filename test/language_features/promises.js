@@ -70,13 +70,118 @@ describe('promises', () => {
 
       it('should also be able to handle the error with a second callback', () => {
         return new Promise((resolve, reject) => reject(new Error('yui')))
-          .then(result => {}, err => expect(err.message).to.equal('yui'));
+          .then(result => {
+          }, err => expect(err.message).to.equal('yui'));
       });
 
       it('should execute successive then callbacks', () => {
         return new Promise((resolve, reject) => resolve('foo'))
           .then(result => expect(result).to.equal('foo'))
-          .then(result => expect(result).to.be.an('object'))
+          .then(result => expect(result).to.be.an('object'));
+      });
+    });
+
+    describe('when an unknown number of iterations needs to be made', () => {
+
+      it('should resolve success', () => {
+        const maxAttempts = 5;
+
+        return attemptUntilSuccess().then(result => expect(result).to.equal('success'));
+
+        function attemptUntilSuccess() {
+          let numberOfAttempts = 0;
+
+          return new Promise((resolve, reject) => {
+            makeAttempt();
+
+            function makeAttempt() {
+              return probablyWillFail()
+                .then(resolve)
+                .catch(() => {
+                  return numberOfAttempts++ >= maxAttempts
+                    ? reject(new Error('Reached the maximum number of attempts'))
+                    : makeAttempt();
+                });
+            }
+          });
+
+          function probablyWillFail() {
+            return new Promise((resolve, reject) => {
+              if (numberOfAttempts === maxAttempts - 1) resolve('success');
+              else reject(new Error('Not your lucky day!'));
+            });
+          }
+        }
+      });
+
+      it('should throw once the max attempts have been exceeded', () => {
+        const maxAttempts = 5;
+        let error;
+
+        return attemptUntilSuccess().catch(err => error = err).then(() => expect(error.message).to.equal('Reached the maximum number of attempts'));
+
+        function attemptUntilSuccess() {
+          let numberOfAttempts = 0;
+
+          return new Promise((resolve, reject) => {
+            makeAttempt();
+
+            function makeAttempt() {
+              return probablyWillFail()
+                .then(resolve)
+                .catch(() => {
+                  return numberOfAttempts++ >= maxAttempts
+                    ? reject(new Error('Reached the maximum number of attempts'))
+                    : makeAttempt();
+                });
+            }
+          });
+
+          function probablyWillFail() {
+            return new Promise((resolve, reject) => {
+              if (numberOfAttempts === maxAttempts + 6789) resolve('success');
+              else reject(new Error('Not your lucky day!'));
+            });
+          }
+        }
+      });
+
+      it('should throw if a secondary promise fails', () => {
+        const maxAttempts = 5;
+        let error;
+
+        return attemptUntilSuccess().catch(err => error = err).then(() => expect(error.message).to.equal('not today!'));
+
+        function attemptUntilSuccess() {
+          let numberOfAttempts = 0;
+
+          return new Promise((resolve, reject) => {
+            makeAttempt();
+
+            function makeAttempt() {
+              // console.log('making attempt #', numberOfAttempts);
+              return probablyWillFail()
+                .then(resolve)
+                .catch(() => {
+                  return numberOfAttempts++ >= maxAttempts
+                    ? reject(new Error('Reached the maximum number of attempts'))
+                    : Promise.reject(new Error('not today!'))
+                      .catch(err => {
+                        reject(err);
+                        throw err;
+                      })
+                      .then(makeAttempt);
+                });
+            }
+          });
+
+          function probablyWillFail() {
+            return new Promise((resolve, reject) => {
+              if (numberOfAttempts === maxAttempts - 1) resolve('success');
+              else reject(new Error('Not your lucky day!'));
+            });
+          }
+        }
       });
     });
   });
