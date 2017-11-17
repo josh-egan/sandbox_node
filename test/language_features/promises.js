@@ -1,7 +1,5 @@
 'use strict';
 
-const expect = require('chai').expect;
-
 describe('promises', () => {
   describe('node native promises', () => {
     describe('#Promise.resolve', () => {
@@ -150,7 +148,7 @@ describe('promises', () => {
         const maxAttempts = 5;
         let error;
 
-        return attemptUntilSuccess().catch(err => error = err).then(() => expect(error.message).to.equal('not today!'));
+        return attemptUntilSuccess().catch(err => error = err).then(() => expect(error.message).to.equal('Can\'t win for losing.'));
 
         function attemptUntilSuccess() {
           let numberOfAttempts = 0;
@@ -165,12 +163,9 @@ describe('promises', () => {
                 .catch(() => {
                   return numberOfAttempts++ >= maxAttempts
                     ? reject(new Error('Reached the maximum number of attempts'))
-                    : Promise.reject(new Error('not today!'))
-                      .catch(err => {
-                        reject(err);
-                        throw err;
-                      })
-                      .then(makeAttempt);
+                    : goingToFail()
+                      .then(makeAttempt)
+                      .catch(reject);
                 });
             }
           });
@@ -179,6 +174,13 @@ describe('promises', () => {
             return new Promise((resolve, reject) => {
               if (numberOfAttempts === maxAttempts - 1) resolve('success');
               else reject(new Error('Not your lucky day!'));
+            });
+          }
+
+          function goingToFail() {
+            return new Promise((resolve, reject) => {
+              if (numberOfAttempts > numberOfAttempts + 10) resolve('success');
+              else reject(new Error('Can\'t win for losing.'));
             });
           }
         }

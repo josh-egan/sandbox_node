@@ -1,7 +1,5 @@
 // Note that use strict is intentionally not placed at the top of this file.
 
-const expect = require('chai').expect;
-
 function globalFunctionStrict() {
   'use strict';
   return this;

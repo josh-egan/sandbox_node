@@ -1,7 +1,5 @@
 'use strict';
 
-const expect = require('chai').expect;
-
 /*
  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Iterators_and_Generators
 
